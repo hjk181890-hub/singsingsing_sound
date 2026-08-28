@@ -35,6 +35,7 @@
   .count{font-size:12px; color:var(--dim)} .count b{color:var(--lamp)}
   .badge{font-size:11px; font-weight:700; color:#1A1405; background:var(--lamp); border-radius:2px; padding:3px 9px}
   .badge.net{background:var(--bed)}
+  .badge.saved{background:var(--live)}
 
   .wrap{padding:0 24px}
   .act{margin:26px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--line);
@@ -152,7 +153,10 @@
     <span class="badge" id="badge" hidden></span>
     <button id="pickFiles" class="primary">음원 파일 넣기</button>
     <button id="pickFolder">폴더로 넣기 (PC)</button>
+    <button id="exportMix">설정 내보내기</button>
+    <button id="importMix">설정 불러오기</button>
     <button id="pack">공유 파일 만들기</button>
+    <span class="badge saved" id="saved" hidden>저장됨</span>
     <button id="clearAll">전체 비우기</button>
   </div>
 </header>
@@ -174,47 +178,45 @@
 <script>
 /* ── 큐 데이터 ───────────────────────────────────────────── */
 const CUES = [
- {q:"Q1", act:"프롤로그", trig:"객석 정리 후 큐", what:"주제곡 인스트 (밝고 신나게)", kind:"라이브", len:"~2분", loop:true, fi:2, fo:3, vol:"MF", src:"편곡자 반주 음원", term:"", note:"이세령 편곡 반주 · AI 생성 금지"},
- {q:"Q2", act:"프롤로그", trig:"알레그로 등장·대사 시작", what:"Q1 볼륨 다운 (계속 흐름)", kind:"덕킹", len:"—", loop:false, fi:3, fo:0, vol:"MP", src:"Q1 동일 소스", term:"", note:"대사 밑으로 −12dB"},
- {q:"Q3", act:"프롤로그", trig:"\u201c한 가지 고민이 있었지.\u201d", what:"주제곡 멈춤", kind:"컷", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"Q1 정지", term:"", note:"정박에 컷"},
- {q:"Q4", act:"프롤로그", trig:"\u201c그 노래를 먼저 살짝 배워볼까?\u201d", what:"hook 멜로디 + 코드 반주", kind:"라이브", len:"~1분", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"관객 콜앤리스폰스 · 길이 가변"},
- {q:"Q5", act:"프롤로그", trig:"암전", what:"전환 화이트노이즈 스웰", kind:"스팅어", len:"3s", loop:false, fi:0, fo:1, vol:"MF", src:"Pixabay", term:"whoosh transition swell", note:"암전과 동시"},
-
- {q:"Q6", act:"1막 · 음악이 사라진 마을", trig:"스크린 회색 마을", what:"주제곡 마이너·느리게 + 차가운 앰비언스", kind:"베드", len:"5분+", loop:true, fi:3, fo:3, vol:"PP", src:"편곡자 + Pixabay", term:"cold empty ambience drone", note:"제이 독백 전체를 덮어야 함"},
- {q:"Q7", act:"1막 · 음악이 사라진 마을", trig:"\u201c난 이제 노래 같은 거 안 할래.\u201d", what:"신비로운 오르골 선율", kind:"베드", len:"3분", loop:true, fi:2, fo:2, vol:"MP", src:"Pixabay", term:"music box magical sparkle loop", note:"스크린 오로라 전환과 동시"},
- {q:"Q8", act:"1막 · 음악이 사라진 마을", trig:"알레그로 튀어나옴", what:"타악기 잔망스럽게 (뿅!)", kind:"스팅어", len:"2s", loop:false, fi:0, fo:1, vol:"F", src:"Pixabay", term:"cartoon percussion pop comedic", note:"등장 동작에 정확히"},
- {q:"Q9", act:"1막 · 음악이 사라진 마을", trig:"\u201c오페라…랜드요?\u201d", what:"Voi che sapete 전주", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 01 · 전주는 알레그로 대사 밑으로 진행"},
- {q:"Q10", act:"1막 · 음악이 사라진 마을", trig:"노래 종료 직후", what:"북소리·발 구르는 리듬", kind:"베드", len:"8s", loop:true, fi:0, fo:2, vol:"MF", src:"Pixabay", term:"marching drum stomp rhythm loop", note:"템포 등장 · 점점 크게"},
- {q:"Q11", act:"1막 · 음악이 사라진 마을", trig:"\u201c저도 해볼래요!\u201d", what:"Non più andrai", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 02"},
- {q:"Q12", act:"1막 · 음악이 사라진 마을", trig:"노래 종료 · 빛의 문 열림", what:"문 열림 — 차임 + 리버스 스웰", kind:"스팅어", len:"4s", loop:false, fi:0, fo:2, vol:"F", src:"Pixabay", term:"magical door open shimmer reverse", note:"조명 큐와 동시"},
- {q:"Q13", act:"1막 · 음악이 사라진 마을", trig:"암전 · 템포 퇴장", what:"물 흐르는 소리 + 하프 아르페지오", kind:"베드", len:"8분+", loop:true, fi:4, fo:4, vol:"MP", src:"Pixabay 2트랙 믹스", term:"gentle river stream water harp ambient", note:"2막 대사 전체 밑 · 가장 긴 큐"},
-
- {q:"Q14", act:"2막 · 오페라랜드의 여행", trig:"\u201c여긴 멜로디의 강이야.\u201d", what:"차임벨 상행", kind:"스팅어", len:"2s", loop:false, fi:0, fo:1, vol:"MP", src:"Pixabay", term:"wind chime ascending glissando", note:"연출메모 지정"},
- {q:"Q15", act:"2막 · 오페라랜드의 여행", trig:"\u201c강물처럼… 이렇게 흐르는 거란다.\u201d", what:"차임벨 상·하행 (느리게)", kind:"스팅어", len:"3s", loop:false, fi:0, fo:1, vol:"MP", src:"Pixabay", term:"wind chime slow up down", note:"연출메모 지정"},
- {q:"Q15A", act:"2막 · 오페라랜드의 여행", trig:"안단테, 노래 준비 자세", what:"Q13 강물소리 낮추기 (노래 밑으로)", kind:"덕킹", target:"Q13", duckTo:"PP", len:"—", loop:false, fi:4, fo:0, vol:"PP", src:"Q13 제어", term:"", note:"물소리는 끊지 않고 볼륨만 내림 · 4초"},
- {q:"Q16", act:"2막 · 오페라랜드의 여행", trig:"\u201c바람을 따라 흘러가도록 두는 거야.\u201d", what:"Habanera", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 03"},
- {q:"Q16A", act:"2막 · 오페라랜드의 여행", trig:"Habanera 종료", what:"Q13 강물소리 원래대로", kind:"복귀", target:"Q13", len:"—", loop:false, fi:3, fo:0, vol:"MP", src:"Q13 제어", term:"", note:"노래 끝나면 물소리 원래 음량으로 복귀"},
- {q:"Q17", act:"2막 · 오페라랜드의 여행", trig:"템포 객석에서 등장", what:"탬버린·캐스터네츠 리듬", kind:"베드", len:"2분", loop:true, fi:0, fo:2, vol:"MF", src:"Pixabay", term:"tambourine castanet rhythm loop", note:"템포 등장 동안"},
- {q:"Q18", act:"2막 · 오페라랜드의 여행", trig:"\u201c어깨동무를 하며\u201d", what:"두근두근 심장소리 (보통)", kind:"베드", len:"5분", loop:true, fi:2, fo:2, vol:"PP", src:"Pixabay", term:"heartbeat slow loop", note:"연출메모 지정 · 대사 밑 저역"},
- {q:"Q19", act:"2막 · 오페라랜드의 여행", trig:"\u201c손가락이 튕겨지고 싶지 않았냐고!\u201d", what:"빠른 심장소리", kind:"베드", len:"3분", loop:true, fi:1, fo:1, vol:"MP", src:"Pixabay", term:"heartbeat fast loop", note:"Q18에서 크로스페이드"},
- {q:"Q20", act:"2막 · 오페라랜드의 여행", trig:"\u201c쿵 짝짝 쿵 짝짝\u201d", what:"왈츠 리듬 타악기 (박수 유도)", kind:"베드", len:"2분", loop:true, fi:0, fo:0, vol:"MF", src:"Pixabay", term:"waltz percussion clap rhythm loop", note:"연출메모: 타악기 같이"},
- {q:"Q21", act:"2막 · 오페라랜드의 여행", trig:"\u201c노래는 이렇게 뛰어야 하는 거야!\u201d", what:"La donna è mobile", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 04"},
- {q:"Q22", act:"2막 · 오페라랜드의 여행", trig:"전 조명 소등 · 푸른빛 1등", what:"저음 파이프오르간·베이스 드론", kind:"베드", len:"6분+", loop:true, fi:3, fo:4, vol:"MP", src:"Pixabay", term:"pipe organ low drone ominous", note:"카덴차 등장~퇴장 전체"},
- {q:"Q23", act:"2막 · 오페라랜드의 여행", trig:"카덴차 첫 대사 직전", what:"천둥번개", kind:"스팅어", len:"5s", loop:false, fi:0, fo:3, vol:"F", src:"Pixabay", term:"thunder crack rumble", note:"스크린 번개와 싱크"},
- {q:"Q24", act:"2막 · 오페라랜드의 여행", trig:"안단테 \u201c쉿! 조용히 해!\u201d", what:"번개소리 (2회차)", kind:"스팅어", len:"3s", loop:false, fi:0, fo:2, vol:"MF", src:"Q23 동일 소스", term:"thunder crack rumble", note:"Q23보다 짧게"},
- {q:"Q25", act:"2막 · 오페라랜드의 여행", trig:"\u201c음악이 가진 진정한 무게다!\u201d", what:"Nessun dorma", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 05"},
- {q:"Q26", act:"2막 · 오페라랜드의 여행", trig:"템포·안단테·알레그로 퇴장", what:"암전 전환음", kind:"스팅어", len:"3s", loop:false, fi:0, fo:2, vol:"MP", src:"Pixabay", term:"dark transition swell", note:"Q22 페이드아웃과 겹침"},
-
- {q:"Q27", act:"3막 · 내 안의 노래를 찾아서", trig:"제이 무대 중앙 · 따뜻한 핀조명", what:"스트링 스웰 (따뜻하게)", kind:"베드", len:"4분", loop:true, fi:4, fo:3, vol:"PP", src:"Pixabay", term:"warm strings ambient pad loop", note:"조명 전환과 동시"},
- {q:"Q28", act:"3막 · 내 안의 노래를 찾아서", trig:"\u201c그 빛을 믿고 노래해 보려고 해요.\u201d", what:"O mio babbino caro", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 06"},
- {q:"Q29", act:"3막 · 내 안의 노래를 찾아서", trig:"배경 스크린 — 불꽃이 별이 됨", what:"반짝임 스파클", kind:"베드", len:"2분", loop:true, fi:2, fo:2, vol:"PP", src:"Pixabay", term:"sparkle shimmer twinkle loop", note:"영상 싱크 · 노래 밑 아주 작게"},
- {q:"Q30", act:"3막 · 내 안의 노래를 찾아서", trig:"세 요정 축제 의상 등장", what:"환호 + 축제 타악", kind:"스팅어", len:"4s", loop:false, fi:0, fo:2, vol:"F", src:"Pixabay", term:"crowd cheer festive celebration", note:"연출메모: 환호하며"},
- {q:"Q31", act:"3막 · 내 안의 노래를 찾아서", trig:"\u201c우리 마음속의 노래를 위해서!\u201d", what:"Brindisi", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"MF", src:"피아노 라이브", term:"", note:"삽입곡 07"},
- {q:"Q32", act:"3막 · 내 안의 노래를 찾아서", trig:"제이 빛의 통로 통과", what:"마을이 색을 되찾는 전환음", kind:"베드", len:"2분", loop:true, fi:3, fo:3, vol:"MP", src:"Pixabay", term:"uplifting bright transition pad", note:"노래 진행 중 서서히"},
-
- {q:"Q33", act:"피날레 · 내 마음의 노래", trig:"제이·알레그로 외 퇴장", what:"카덴차 목소리 (멀리서, 리버브)", kind:"보이스", len:"8s", loop:false, fi:2, fo:3, vol:"MF", src:"사전 녹음", term:"", note:"김하정 녹음 + 리버브 롱테일 · 무대 뒤 스피커"},
- {q:"Q34", act:"피날레 · 내 마음의 노래", trig:"제이 무반주 후렴", what:"무음 — 모든 큐 정지", kind:"정지", len:"—", loop:false, fi:0, fo:0, vol:"—", src:"—", term:"", note:"완전 무음 확보 — 가장 중요한 큐"},
- {q:"Q35", act:"피날레 · 내 마음의 노래", trig:"관객 대답 후", what:"Sing Sing Sing 반주 시작", kind:"라이브", len:"—", loop:false, fi:0, fo:0, vol:"F", src:"피아노 라이브", term:"", note:"삽입곡 08 · 전 출연진 + 관객"},
+ {"q": "Q0", "act": "프롤로그", "trig": "객석 정리 · 안내방송 시작", "what": "주제곡 (안내방송 배경)", "kind": "베드", "len": "~3분", "loop": true, "fi": 2, "fo": 5, "vol": "MP", "src": "편곡자 반주 음원", "term": "", "note": "안내방송이 끝나면 방송과 함께 페이드아웃 → 암전"},
+ {"q": "Q1", "act": "프롤로그", "trig": "조명 큐와 동시", "what": "주제곡 다시 재생 (처음부터, 작게)", "kind": "베드", "len": "~2분", "loop": true, "fi": 0, "fo": 3, "vol": "MP", "src": "Q0 동일 음원", "term": "", "note": "반드시 처음부터 · 조명 큐와 정확히 동시"},
+ {"q": "Q2", "act": "프롤로그", "trig": "알레그로 대사 시작", "what": "Q1 볼륨 30% 다운", "kind": "덕킹", "len": "—", "loop": false, "fi": 2, "fo": 0, "vol": "MP", "src": "Q1 제어", "term": "", "note": "끊지 않고 볼륨만 30% 내림", "target": "Q1", "duckMul": 0.7},
+ {"q": "Q3", "act": "프롤로그", "trig": "“한 가지 고민이 있었지.”", "what": "Q1 즉시 정지", "kind": "컷", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "—", "src": "Q1 제어", "term": "", "note": "페이드 없이 정박에 딱 정지", "target": "Q1"},
+ {"q": "Q4", "act": "프롤로그", "trig": "“알레그로가 먼저 불러볼게!”", "what": "hook 반주 1회 (모티프 율동)", "kind": "라이브", "len": "~30초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "모티프 율동과 함께"},
+ {"q": "Q4A", "act": "프롤로그", "trig": "“모두 함께 따라 불러볼까? 준비, 시작!”", "what": "hook 반주 2회 (관객 따라부르기)", "kind": "라이브", "len": "~40초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "관객 콜앤리스폰스 · 길이 가변"},
+ {"q": "Q5", "act": "프롤로그", "trig": "암전", "what": "전환 화이트노이즈 스웰", "kind": "스팅어", "len": "3s", "loop": false, "fi": 0, "fo": 1, "vol": "MF", "src": "Pixabay", "term": "magical riser transition", "note": "암전과 동시"},
+ {"q": "Q6", "act": "1막 · 음악이 사라진 마을", "trig": "스크린 회색 마을", "what": "주제곡 마이너·느리게 + 차가운 앰비언스", "kind": "베드", "len": "5분+", "loop": true, "fi": 3, "fo": 3, "vol": "PP", "src": "편곡자 + Pixabay", "term": "cold empty ambience drone", "note": "제이 독백 전체를 덮어야 함"},
+ {"q": "Q7", "act": "1막 · 음악이 사라진 마을", "trig": "“난 이제 노래 같은 거 안 할래.”", "what": "신디 지속음 3번 → 오르골 선율", "kind": "베드", "len": "3분", "loop": true, "fi": 2, "fo": 2, "vol": "MP", "src": "신디 라이브 + Pixabay", "term": "music box magical sparkle", "note": "신디사이저 지속음 3번을 친 뒤 음원 재생"},
+ {"q": "Q8", "act": "1막 · 음악이 사라진 마을", "trig": "알레그로 튀어나옴", "what": "타악기 잔망스럽게 (뿅!)", "kind": "스팅어", "len": "2s", "loop": false, "fi": 0, "fo": 1, "vol": "F", "src": "Pixabay", "term": "cartoon magic pop level up", "note": "등장 동작에 정확히"},
+ {"q": "Q9", "act": "1막 · 음악이 사라진 마을", "trig": "“오페라…랜드요?”", "what": "Voi che sapete 전주", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 01 · 전주는 알레그로 대사 밑으로 진행"},
+ {"q": "Q10", "act": "1막 · 음악이 사라진 마을", "trig": "“음악에는 멜로디만 있는 게 아니거든.” 직후", "what": "북소리·발 구르는 리듬", "kind": "베드", "len": "8s", "loop": true, "fi": 0, "fo": 2, "vol": "MF", "src": "Pixabay", "term": "marching drum stomp rhythm", "note": "템포 등장 · 점점 크게"},
+ {"q": "Q11", "act": "1막 · 음악이 사라진 마을", "trig": "“저도 해볼래요!”", "what": "Non più andrai", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 02"},
+ {"q": "Q12", "act": "1막 · 음악이 사라진 마을", "trig": "노래 종료 · 빛의 문 열림", "what": "문 열림 — 리버스 심벌 + 글로켄 글리산도", "kind": "스팅어", "len": "4s", "loop": false, "fi": 0, "fo": 2, "vol": "F", "src": "Pixabay", "term": "reverse cymbal portal open", "note": "조명 큐와 동시 · 2~3겹 추천"},
+ {"q": "Q13", "act": "1막 · 음악이 사라진 마을", "trig": "암전 · 템포 퇴장", "what": "물 흐르는 소리 + 하프 아르페지오", "kind": "베드", "len": "8분+", "loop": true, "fi": 4, "fo": 4, "vol": "MP", "src": "Freesound 2트랙", "term": "gentle river stream water harp", "note": "2막 대사 전체 밑에 깔림 · 가장 긴 큐"},
+ {"q": "Q14", "act": "2막 · 오페라랜드의 여행", "trig": "“여긴 멜로디의 강이야.”", "what": "벨트리 상행 (차임)", "kind": "스팅어", "len": "2s", "loop": false, "fi": 0, "fo": 1, "vol": "MP", "src": "Pixabay", "term": "bell tree ascending glissando", "note": "강물소리는 끊지 않고 위에 얹음"},
+ {"q": "Q15A", "act": "2막 · 오페라랜드의 여행", "trig": "안단테, 노래 준비 자세", "what": "Q13 강물소리 낮추기", "kind": "덕킹", "len": "—", "loop": false, "fi": 4, "fo": 0, "vol": "PP", "src": "Q13 제어", "term": "", "note": "물소리는 끊지 않고 볼륨만 내림 · 4초", "target": "Q13", "duckTo": "PP"},
+ {"q": "Q16", "act": "2막 · 오페라랜드의 여행", "trig": "“바람을 따라 흘러가도록 두는 거야.”", "what": "Habanera", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 03 · 강물소리 밑에 깔린 채 진행"},
+ {"q": "Q16A", "act": "2막 · 오페라랜드의 여행", "trig": "Habanera 종료", "what": "강물소리 다시 재생", "kind": "베드", "len": "5분+", "loop": true, "fi": 3, "fo": 2, "vol": "MP", "src": "Freesound", "term": "gentle river stream water ambience", "note": "노래 끝나면 강물소리 음원 다시 시작"},
+ {"q": "Q16B", "act": "2막 · 오페라랜드의 여행", "trig": "템포 객석에서 등장", "what": "강물소리 정지", "kind": "컷", "len": "—", "loop": false, "fi": 0, "fo": 2, "vol": "—", "src": "Q13·Q16A 제어", "term": "", "note": "2초 페이드로 강물소리 정리", "targets": ["Q13", "Q16A"], "cutFade": 2},
+ {"q": "Q17", "act": "2막 · 오페라랜드의 여행", "trig": "템포 등장 직후", "what": "탬버린·캐스터네츠 리듬", "kind": "베드", "len": "2분", "loop": true, "fi": 0, "fo": 2, "vol": "MF", "src": "Pixabay", "term": "tambourine castanet rhythm", "note": "강물소리가 멈춘 뒤 들어감"},
+ {"q": "Q18", "act": "2막 · 오페라랜드의 여행", "trig": "“심장이 뛰어야 진짜 노래지!”", "what": "두근두근 심장소리 (보통)", "kind": "베드", "len": "5분", "loop": true, "fi": 2, "fo": 2, "vol": "PP", "src": "Pixabay", "term": "heartbeat slow", "note": "연출메모 지정 · 대사 밑 저역"},
+ {"q": "Q19", "act": "2막 · 오페라랜드의 여행", "trig": "“손가락이 튕겨지고 싶지 않았냐고!”", "what": "빠른 심장소리", "kind": "베드", "len": "3분", "loop": true, "fi": 1, "fo": 1, "vol": "MP", "src": "Q18 음원 배속 가능", "term": "heartbeat fast", "note": "Q18에서 크로스페이드 · 같은 음원 1.4배속도 가능"},
+ {"q": "Q20", "act": "2막 · 오페라랜드의 여행", "trig": "“쿵 짝짝 쿵 짝짝”", "what": "왈츠 리듬 타악기 (박수 유도)", "kind": "베드", "len": "2분", "loop": true, "fi": 0, "fo": 0, "vol": "MF", "src": "Pixabay", "term": "waltz percussion clap rhythm", "note": "연출메모: 타악기 같이"},
+ {"q": "Q21", "act": "2막 · 오페라랜드의 여행", "trig": "“자 들어봐 안단테”", "what": "La donna è mobile", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 04 · 대사에 바로 이어 시작"},
+ {"q": "Q22", "act": "2막 · 오페라랜드의 여행", "trig": "전 조명 소등 · 푸른빛 1등", "what": "저음 파이프오르간·베이스 드론", "kind": "베드", "len": "6분+", "loop": true, "fi": 3, "fo": 4, "vol": "MP", "src": "Pixabay", "term": "pipe organ low drone ominous", "note": "카덴차 등장~퇴장 전체"},
+ {"q": "Q23", "act": "2막 · 오페라랜드의 여행", "trig": "카덴차 첫 대사 직전", "what": "천둥번개", "kind": "스팅어", "len": "5s", "loop": false, "fi": 0, "fo": 3, "vol": "F", "src": "Pixabay", "term": "thunder crack rumble", "note": "스크린 번개와 싱크"},
+ {"q": "Q24", "act": "2막 · 오페라랜드의 여행", "trig": "안단테 “쉿! 조용히 해!”", "what": "번개소리 (2회차)", "kind": "스팅어", "len": "3s", "loop": false, "fi": 0, "fo": 2, "vol": "MF", "src": "Q23 동일 음원", "term": "thunder crack rumble", "note": "Q23보다 짧게"},
+ {"q": "Q25", "act": "2막 · 오페라랜드의 여행", "trig": "“이것이 바로 음악이 가진 진정한 무게다!”", "what": "Nessun dorma", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 05"},
+ {"q": "Q26", "act": "2막 · 오페라랜드의 여행", "trig": "템포·안단테·알레그로 퇴장", "what": "암전 전환음", "kind": "스팅어", "len": "3s", "loop": false, "fi": 0, "fo": 2, "vol": "MP", "src": "Pixabay", "term": "dark transition swell", "note": "Q22 페이드아웃과 겹침"},
+ {"q": "Q27", "act": "3막 · 내 안의 노래를 찾아서", "trig": "제이 무대 중앙 · 따뜻한 핀조명", "what": "스트링 스웰 (따뜻하게)", "kind": "베드", "len": "4분", "loop": true, "fi": 4, "fo": 3, "vol": "PP", "src": "Pixabay", "term": "warm strings ambient pad", "note": "조명 전환과 동시"},
+ {"q": "Q28", "act": "3막 · 내 안의 노래를 찾아서", "trig": "“그 빛을 믿고 노래해 보려고 해요.”", "what": "O mio babbino caro", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 06"},
+ {"q": "Q29", "act": "3막 · 내 안의 노래를 찾아서", "trig": "배경 스크린 — 불꽃이 별이 됨", "what": "반짝임 스파클", "kind": "베드", "len": "2분", "loop": true, "fi": 2, "fo": 2, "vol": "PP", "src": "Kenney.nl / Pixabay", "term": "magic sparkle twinkle", "note": "영상 싱크 · 노래 밑 아주 작게"},
+ {"q": "Q30", "act": "3막 · 내 안의 노래를 찾아서", "trig": "세 요정 축제 의상 등장", "what": "환호 + 축제 타악", "kind": "스팅어", "len": "4s", "loop": false, "fi": 0, "fo": 2, "vol": "F", "src": "Pixabay", "term": "crowd cheer festive celebration", "note": "연출메모: 환호하며"},
+ {"q": "Q31", "act": "3막 · 내 안의 노래를 찾아서", "trig": "“우리 마음속의 노래를 위해서!”", "what": "Brindisi", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브", "term": "", "note": "삽입곡 07"},
+ {"q": "Q32", "act": "3막 · 내 안의 노래를 찾아서", "trig": "제이 빛의 통로 통과", "what": "마을이 색을 되찾는 전환음", "kind": "베드", "len": "2분", "loop": true, "fi": 3, "fo": 3, "vol": "MP", "src": "Pixabay", "term": "uplifting bright transition pad", "note": "노래 진행 중 서서히"},
+ {"q": "Q33", "act": "피날레 · 내 마음의 노래", "trig": "제이·알레그로 외 퇴장", "what": "카덴차 목소리 (멀리서, 리버브)", "kind": "보이스", "len": "8s", "loop": false, "fi": 2, "fo": 3, "vol": "MF", "src": "사전 녹음", "term": "", "note": "김하정 녹음 + 리버브 롱테일 · 무대 뒤 스피커"},
+ {"q": "Q34", "act": "피날레 · 내 마음의 노래", "trig": "제이 무반주 후렴", "what": "무음 — 모든 큐 정지", "kind": "정지", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "—", "src": "—", "term": "", "note": "완전 무음 확보 — 가장 중요한 큐"},
+ {"q": "Q35", "act": "피날레 · 내 마음의 노래", "trig": "관객 대답 후", "what": "Sing Sing Sing 반주 시작", "kind": "라이브", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "F", "src": "피아노 라이브", "term": "", "note": "삽입곡 08 · 전 출연진 + 관객"},
 ];
 
 const VOL = {PP:0.25, MP:0.45, MF:0.70, F:1.00, "—":0.70};
@@ -236,12 +238,31 @@ function fmt(s){
   return m + ':' + String(x).padStart(2, '0');
 }
 
-function makeLayer(i, url, name, file){
-  const L = {name, url, file:file||null, gain:1, err:null, triedData:false,
-             inPt:0, outPt:null, dur:0, trim:false};
+const AUDIO_MIME = n => {
+  const e = (n.split('.').pop() || '').toLowerCase();
+  return {mp3:'audio/mpeg', m4a:'audio/mp4', mp4:'audio/mp4', aac:'audio/aac',
+          wav:'audio/wav', ogg:'audio/ogg', flac:'audio/flac'}[e] || 'audio/mpeg';
+};
+const DATA_LIMIT = 18 * 1024 * 1024;   // 이보다 크면 data URL이 실패하므로 blob 우선
+
+function srcFromFile(file){
+  return new Promise(res => {
+    const mime = AUDIO_MIME(file.name);
+    const blob = (file.type && file.type.startsWith('audio')) ? file : new Blob([file], {type:mime});
+    if (file.size > DATA_LIMIT){ res({kind:'blob', url:URL.createObjectURL(blob)}); return; }
+    const r = new FileReader();
+    r.onload = () => res({kind:'data', url:r.result});
+    r.onerror = () => res({kind:'blob', url:URL.createObjectURL(blob)});
+    r.readAsDataURL(blob);
+  });
+}
+
+function makeLayer(i, url, name, file, kind){
+  const L = {name, url, file:file||null, gain:1, err:null,
+             tried:{[kind || 'url']:true}, inPt:0, outPt:null, dur:0, trim:false};
   const a = new Audio();
   a.playsInline = true; a.preload = 'auto'; a.loop = false;
-  a.onloadedmetadata = () => { L.dur = a.duration || 0; render(); };
+  a.onloadedmetadata = () => { L.dur = a.duration || 0; L.err = null; render(); };
   a.ontimeupdate = () => {
     const s = state[i];
     const end = (L.outPt != null) ? L.outPt : (L.dur || Infinity);
@@ -255,40 +276,52 @@ function makeLayer(i, url, name, file){
     if (s.loopOn){ try{ a.currentTime = L.inPt; a.play(); }catch(e){} }
     else { s.playing = s.layers.some(x => x.audio && !x.audio.paused); render(); }
   };
-  a.onerror = () => {
-    if (L.file && !L.triedData){
-      L.triedData = true; L.err = '불러오는 중…'; render();
-      const r = new FileReader();
-      r.onload = () => { L.err = null; a.src = r.result; a.load(); render(); };
-      r.onerror = () => { L.err = '파일을 읽지 못했습니다'; render(); };
-      r.readAsDataURL(L.file);
-      return;
-    }
-    const code = a.error ? a.error.code : 0;
-    L.err = code === 4 ? '브라우저가 열지 못하는 형식입니다 (mp3 권장)' : '재생할 수 없는 파일입니다';
-    render();
-  };
+  a.onerror = () => retry(L, a);
   a.src = url; a.load();
   L.audio = a;
   return L;
 }
 
-function addFile(i, file){
-  const s = state[i];
-  if (file.size > BIG){ s.layers.push(makeLayer(i, URL.createObjectURL(file), file.name, file)); render(); return; }
-  const holder = {name:file.name, err:'불러오는 중…', gain:1, audio:null, file};
-  s.layers.push(holder); render();
-  const r = new FileReader();
-  r.onload = () => {
-    const k = s.layers.indexOf(holder);
-    if (k >= 0) s.layers[k] = makeLayer(i, r.result, file.name, file);
-    render();
-  };
-  r.onerror = () => { holder.err = '파일을 읽지 못했습니다'; render(); };
-  r.readAsDataURL(file);
+// data URL ↔ blob 을 번갈아 시도한다
+function retry(L, a){
+  if (!L.file){ L.err = '음원을 불러오지 못했습니다'; render(); return; }
+  const mime = AUDIO_MIME(L.name);
+  const blob = (L.file.type && L.file.type.startsWith('audio')) ? L.file : new Blob([L.file], {type:mime});
+  if (!L.tried.blob){
+    L.tried.blob = true; L.err = '다시 불러오는 중…'; render();
+    a.src = URL.createObjectURL(blob); a.load(); return;
+  }
+  if (!L.tried.data && L.file.size <= DATA_LIMIT){
+    L.tried.data = true; L.err = '다시 불러오는 중…'; render();
+    const r = new FileReader();
+    r.onload = () => { a.src = r.result; a.load(); };
+    r.onerror = () => { L.err = '파일을 읽지 못했습니다'; render(); };
+    r.readAsDataURL(blob); return;
+  }
+  const code = a.error ? a.error.code : 0;
+  L.err = code === 4 ? '브라우저가 열지 못하는 형식입니다 (mp3 권장)' : '재생할 수 없는 음원입니다';
+  render();
 }
 
-function addURL(i, url, name){ state[i].layers.push(makeLayer(i, url, name)); }
+function fmt(s){
+  if (!isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60), x = Math.floor(s % 60);
+  return m + ':' + String(x).padStart(2, '0');
+}
+
+function addFile(i, file){
+  const s = state[i];
+  const holder = {name:file.name, err:'불러오는 중…', gain:1, audio:null, file, tried:{}, inPt:0, outPt:null, dur:0};
+  s.layers.push(holder); render();
+  srcFromFile(file).then(r => {
+    const k = s.layers.indexOf(holder);
+    const L = makeLayer(i, r.url, file.name, file, r.kind);
+    if (k >= 0) s.layers[k] = L; else s.layers.push(L);
+    render(); persist();
+  });
+}
+
+function addURL(i, url, name){ state[i].layers.push(makeLayer(i, url, name, null, 'url')); }
 
 function removeLayer(i, k){
   const s = state[i], L = s.layers[k];
@@ -298,7 +331,7 @@ function removeLayer(i, k){
   }
   s.layers.splice(k, 1);
   if (!s.layers.length) s.playing = false;
-  render();
+  render(); persist();
 }
 
 /* ── 렌더 ─────────────────────────────────────────────── */
@@ -370,7 +403,7 @@ function render(){
       sel.onchange = () => {
         s.rate = parseFloat(sel.value);
         s.layers.forEach(L => { if (L.audio) try{ L.audio.playbackRate = s.rate; }catch(e){} });
-        render();
+        render(); persist();
       };
       sp.append(lb, sel); meta.appendChild(sp);
       const prog = document.createElement('div');
@@ -401,6 +434,7 @@ function render(){
           r.oninput = () => {
             L.gain = r.value / 100; v.textContent = r.value;
             if (s.playing) try{ L.audio.volume = level(c.vol) * L.gain; }catch(e){}
+            persist();
           };
           mix.append(r, v); el.appendChild(mix);
 
@@ -423,7 +457,7 @@ function render(){
               rr.value = Math.round(get() * 10);
               const tv = document.createElement('span'); tv.className = 'mono'; tv.textContent = fmt(get());
               rr.oninput = () => { set(rr.value / 10); tv.textContent = fmt(rr.value / 10); };
-              rr.onchange = () => render();
+              rr.onchange = () => { render(); persist(); };
               wrap.append(lb, rr, tv); return wrap;
             };
             tp.appendChild(mk('시작', () => L.inPt, x => { L.inPt = Math.min(x, (L.outPt != null ? L.outPt : dur) - 0.2); }));
@@ -431,10 +465,10 @@ function render(){
             const btns = document.createElement('div'); btns.className = 'trimbtns';
             const bNow = document.createElement('button');
             bNow.textContent = '지금 위치를 시작점으로';
-            bNow.onclick = () => { L.inPt = L.audio.currentTime; render(); };
+            bNow.onclick = () => { L.inPt = L.audio.currentTime; render(); persist(); };
             const bRst = document.createElement('button');
             bRst.textContent = '전체로';
-            bRst.onclick = () => { L.inPt = 0; L.outPt = null; render(); };
+            bRst.onclick = () => { L.inPt = 0; L.outPt = null; render(); persist(); };
             btns.append(bNow, bRst); tp.appendChild(btns);
             el.appendChild(tp);
           }
@@ -468,10 +502,7 @@ function render(){
     bl.className = 'loopbtn' + (s.loopOn ? ' on' : '');
     bl.textContent = '반복';
     bl.setAttribute('aria-pressed', s.loopOn ? 'true' : 'false');
-    bl.onclick = () => {
-      s.loopOn = !s.loopOn;
-      render();
-    };
+    bl.onclick = () => { s.loopOn = !s.loopOn; render(); persist(); };
     bl.disabled = !CAN_FILE(c);
     const b2 = document.createElement('button');
     b2.textContent = '여기서 대기';
@@ -532,9 +563,10 @@ document.getElementById('pickFolder').onclick = () => {
   inp.onchange = () => bulkAssign(inp.files);
   inp.click();
 };
-document.getElementById('clearAll').onclick = () => {
-  if (!confirm('모든 큐의 음원 연결을 지웁니다. 계속할까요?')) return;
+document.getElementById('clearAll').onclick = async () => {
+  if (!confirm('이 브라우저에 저장된 음원과 설정을 모두 지웁니다. 계속할까요?')) return;
   state.forEach((s, i) => { while (s.layers.length) removeLayer(i, 0); });
+  try{ await IDB.clear(); }catch(e){}
   render();
 };
 
@@ -555,12 +587,19 @@ function fire(i){
   if (c.kind === '정지'){ stopAll(); return; }
   if (c.kind === '덕킹' && c.target){
     const t = state[findCue(c.target)];
-    const to = level(c.duckTo || 'PP');
-    if (t && t.playing) t.layers.forEach(L => { if (L.audio) ramp(L.audio, L.audio.volume, to * L.gain, c.fi || 2); });
+    if (t && t.playing) t.layers.forEach(L => {
+      if (!L.audio) return;
+      const to = (c.duckMul != null) ? level(t.cue.vol) * L.gain * c.duckMul
+                                     : level(c.duckTo || 'PP') * L.gain;
+      ramp(L.audio, L.audio.volume, to, c.fi || 2);
+    });
     return;
   }
-  if (c.kind === '컷' && c.target){
-    const j = findCue(c.target); if (j >= 0) stop(j, true);
+  if (c.kind === '컷'){
+    (c.targets || [c.target]).forEach(q => {
+      const j = findCue(q);
+      if (j >= 0) stop(j, !c.cutFade, c.cutFade);
+    });
     return;
   }
   if (c.kind === '복귀' && c.target){
@@ -590,10 +629,10 @@ function fire(i){
   });
 }
 
-function stop(i, hard){
+function stop(i, hard, secOverride){
   const s = state[i];
   if (!s.playing) return;
-  const fo = hard ? 0 : s.cue.fo;
+  const fo = (secOverride != null) ? secOverride : (hard ? 0 : s.cue.fo);
   s.playing = false;
   s.layers.forEach(L => {
     if (!L.audio) return;
@@ -618,6 +657,7 @@ function go(){
 document.getElementById('master').oninput = e => {
   MASTER = e.target.value / 100;
   document.getElementById('masterVal').textContent = e.target.value;
+  persist();
   state.forEach(s => { if (s.playing) s.layers.forEach(L => {
     if (L.audio) try{ L.audio.volume = level(s.cue.vol) * L.gain; }catch(err){}
   }); });
@@ -641,6 +681,101 @@ setInterval(() => {
       ? Math.max(0, Math.min(100, (L.audio.currentTime - a) / span * 100)) + '%' : '0%';
   });
 }, 250);
+
+
+/* ── 자동 저장 (이 브라우저에 남음) ─────────────────────── */
+const IDB = (() => {
+  let dbp;
+  const open = () => dbp || (dbp = new Promise((res, rej) => {
+    const r = indexedDB.open('ssscue', 1);
+    r.onupgradeneeded = () => { const d = r.result; if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv'); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  }));
+  const st = async m => (await open()).transaction('kv', m).objectStore('kv');
+  const wrap = q => new Promise((res, rej) => { q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  return {
+    get: async k => wrap((await st('readonly')).get(k)),
+    set: async (k, v) => wrap((await st('readwrite')).put(v, k)),
+    clear: async () => wrap((await st('readwrite')).clear())
+  };
+})();
+
+let SAVING = false, SAVE_TIMER = null;
+function persist(){
+  clearTimeout(SAVE_TIMER);
+  SAVE_TIMER = setTimeout(doPersist, 400);
+}
+async function doPersist(){
+  if (SAVING) return;
+  SAVING = true;
+  try{
+    const meta = {};
+    for (const s of state){
+      const layers = [];
+      for (const L of s.layers){
+        if (!L.audio && !L.file) continue;
+        if (L.file && !L.key){
+          L.key = 'b:' + s.cue.q + ':' + Math.random().toString(36).slice(2, 9);
+          await IDB.set(L.key, L.file);
+        }
+        layers.push({name:L.name, gain:L.gain, inPt:L.inPt, outPt:L.outPt,
+                     key:L.key || null, url:L.file ? null : L.url});
+      }
+      if (layers.length || s.rate !== 1 || s.loopOn !== !!s.cue.loop)
+        meta[s.cue.q] = {rate:s.rate, loopOn:s.loopOn, layers};
+    }
+    await IDB.set('meta', meta);
+    await IDB.set('master', MASTER);
+    flash('저장됨');
+  }catch(e){ console.warn('save failed', e); }
+  finally{ SAVING = false; }
+}
+
+async function restore(){
+  let meta;
+  try{ meta = await IDB.get('meta'); }catch(e){ return 0; }
+  if (!meta) return 0;
+  try{ const m = await IDB.get('master'); if (m != null){ MASTER = m;
+    document.getElementById('master').value = Math.round(m * 100);
+    document.getElementById('masterVal').textContent = Math.round(m * 100); } }catch(e){}
+  let n = 0;
+  for (const [q, v] of Object.entries(meta)){
+    const i = state.findIndex(s => s.cue.q === q);
+    if (i < 0) continue;
+    const s = state[i];
+    s.rate = v.rate || 1;
+    if (v.loopOn != null) s.loopOn = v.loopOn;
+    for (const li of (v.layers || [])){
+      let L = null;
+      if (li.key){
+        let f = null;
+        try{ f = await IDB.get(li.key); }catch(e){}
+        if (!f) continue;
+        const r = await srcFromFile(f);
+        L = makeLayer(i, r.url, li.name, f, r.kind);
+        L.key = li.key;
+      } else if (li.url){
+        L = makeLayer(i, li.url, li.name, null, 'url');
+      }
+      if (!L) continue;
+      L.gain = (li.gain != null) ? li.gain : 1;
+      L.inPt = li.inPt || 0;
+      L.outPt = (li.outPt != null) ? li.outPt : null;
+      s.layers.push(L); n++;
+    }
+  }
+  return n;
+}
+
+let FLASH_T = null;
+function flash(msg){
+  const el = document.getElementById('saved');
+  if (!el) return;
+  el.textContent = msg; el.hidden = false;
+  clearTimeout(FLASH_T);
+  FLASH_T = setTimeout(() => { el.hidden = true; }, 1600);
+}
 
 /* ── 링크 배포 시 자동 연결 ────────────────────────────── */
 async function autoLoadFromServer(){
@@ -684,6 +819,85 @@ async function autoLoadFromServer(){
   return found;
 }
 
+
+/* ── 설정 파일 (mix.json) ──────────────────────────────── */
+function buildMix(){
+  const mix = {version:1, savedAt:new Date().toISOString(), master:MASTER, cues:{}};
+  state.forEach(s => {
+    const layers = s.layers.filter(L => L.audio || L.file).map(L => ({
+      name:L.name, gain:Math.round(L.gain * 100) / 100,
+      inPt:Math.round((L.inPt || 0) * 100) / 100,
+      outPt:(L.outPt != null) ? Math.round(L.outPt * 100) / 100 : null,
+      url:(L.file ? null : L.url)
+    }));
+    if (layers.length || s.rate !== 1 || s.loopOn !== !!s.cue.loop)
+      mix.cues[s.cue.q] = {rate:s.rate, loop:s.loopOn, layers};
+  });
+  return mix;
+}
+
+async function applyMix(mix, opts){
+  if (!mix || !mix.cues) return 0;
+  const loadAudio = !!(opts && opts.loadAudio);
+  if (mix.master != null){
+    MASTER = mix.master;
+    document.getElementById('master').value = Math.round(MASTER * 100);
+    document.getElementById('masterVal').textContent = Math.round(MASTER * 100);
+  }
+  let n = 0;
+  for (const [q, v] of Object.entries(mix.cues)){
+    const i = state.findIndex(s => s.cue.q === q);
+    if (i < 0) continue;
+    const s = state[i];
+    if (v.rate) s.rate = v.rate;
+    if (v.loop != null) s.loopOn = v.loop;
+    (v.layers || []).forEach((li, k) => {
+      let L = s.layers[k];
+      if (!L && loadAudio && li.url){          // 링크에 올려둔 음원이면 새로 연결
+        L = makeLayer(i, li.url, li.name || li.url.split('/').pop(), null, 'url');
+        s.layers.push(L);
+      }
+      if (!L) return;
+      L.gain = (li.gain != null) ? li.gain : 1;
+      L.inPt = li.inPt || 0;
+      L.outPt = (li.outPt != null) ? li.outPt : null;
+      if (L.audio){
+        try{ L.audio.playbackRate = s.rate; }catch(e){}
+      }
+      n++;
+    });
+  }
+  render(); persist();
+  return n;
+}
+
+document.getElementById('exportMix').onclick = () => {
+  const blob = new Blob([JSON.stringify(buildMix(), null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'mix.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  flash('mix.json 내보냄');
+};
+
+document.getElementById('importMix').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = async () => {
+      try{
+        const n = await applyMix(JSON.parse(r.result), {loadAudio:true});
+        alert(n + '개 트랙에 설정을 적용했습니다.');
+      }catch(e){ alert('설정 파일을 읽지 못했습니다.\n' + e); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+};
+
 /* ── 공유 파일 만들기 ──────────────────────────────────── */
 function readAsDataURL(file){
   return new Promise((res, rej) => {
@@ -694,7 +908,8 @@ function readAsDataURL(file){
 }
 function dataURLtoFile(dataURL, name){
   const [head, b64] = dataURL.split(',');
-  const mime = (head.match(/data:([^;]+)/) || [,'audio/mpeg'])[1];
+  let mime = (head.match(/data:([^;]+)/) || [,'audio/mpeg'])[1];
+  if (!/^audio\//.test(mime)) mime = AUDIO_MIME(name);
   const bin = atob(b64);
   const buf = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
@@ -751,28 +966,46 @@ async function boot(){
   if (window.__EMBED){
     const b = document.getElementById('badge');
     b.hidden = false; b.textContent = '음원 포함 패키지';
-    Object.entries(window.__EMBED).forEach(([q, arr]) => {
+    document.getElementById('hint').innerHTML = HINT_BASE;
+    for (const [q, arr] of Object.entries(window.__EMBED)){
       const i = state.findIndex(s => s.cue.q === q);
-      if (i < 0) return;
-      (Array.isArray(arr) ? arr : [arr]).forEach(v => {
+      if (i < 0) continue;
+      for (const v of (Array.isArray(arr) ? arr : [arr])){
         try{
-          const L = makeLayer(i, v.data, v.name, dataURLtoFile(v.data, v.name));
+          const f = dataURLtoFile(v.data, v.name);
+          const r = await srcFromFile(f);              // 용량에 따라 data ↔ blob 자동 선택
+          const L = makeLayer(i, r.url, v.name, f, r.kind);
           L.gain = (v.gain != null) ? v.gain : 1;
           L.inPt = v.inPt || 0;
           L.outPt = (v.outPt != null) ? v.outPt : null;
           if (v.rate) state[i].rate = v.rate;
           state[i].layers.push(L);
         }catch(e){ console.warn(q, e); }
-      });
-    });
+      }
+    }
+    render(); return;
+  }
+  let n = 0;
+  try{ n = await restore(); }catch(e){}
+  if (n){
+    const b = document.getElementById('badge');
+    b.hidden = false; b.className = 'badge saved'; b.textContent = '저장된 설정 ' + n + '트랙 복원';
     document.getElementById('hint').innerHTML = HINT_BASE;
     render(); return;
   }
-  const n = await autoLoadFromServer();
+  n = await autoLoadFromServer();
+  let mixed = 0;
+  if (/^https?:$/.test(location.protocol)){
+    try{
+      const r = await fetch('mix.json', {cache:'no-store'});
+      if (r.ok) mixed = await applyMix(await r.json(), {loadAudio:!n});
+    }catch(e){}
+  }
   const hint = document.getElementById('hint');
-  if (n){
+  if (n || mixed){
     const b = document.getElementById('badge');
-    b.hidden = false; b.className = 'badge net'; b.textContent = '링크 음원 ' + n + '트랙 자동 연결';
+    b.hidden = false; b.className = 'badge net';
+    b.textContent = '링크 음원 ' + Math.max(n, mixed) + '트랙' + (mixed ? ' · 공유 설정 적용' : '') + ' 자동 연결';
     hint.innerHTML = HINT_BASE;
   } else if (/^https?:$/.test(location.protocol)){
     hint.innerHTML = '이 주소 옆에 음원을 <span class="mono">Q13.mp3</span>로 올려두면 열자마자 붙습니다. ' +
