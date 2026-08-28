@@ -182,8 +182,9 @@ const CUES = [
  {"q": "Q1", "act": "프롤로그", "trig": "조명 큐와 동시", "what": "주제곡 다시 재생 (처음부터, 작게)", "kind": "베드", "len": "~2분", "loop": true, "fi": 0, "fo": 3, "vol": "MP", "src": "Q0 동일 음원", "term": "", "note": "반드시 처음부터 · 조명 큐와 정확히 동시"},
  {"q": "Q2", "act": "프롤로그", "trig": "알레그로 대사 시작", "what": "Q1 볼륨 30% 다운", "kind": "덕킹", "len": "—", "loop": false, "fi": 2, "fo": 0, "vol": "MP", "src": "Q1 제어", "term": "", "note": "끊지 않고 볼륨만 30% 내림", "target": "Q1", "duckMul": 0.7},
  {"q": "Q3", "act": "프롤로그", "trig": "“한 가지 고민이 있었지.”", "what": "Q1 즉시 정지", "kind": "컷", "len": "—", "loop": false, "fi": 0, "fo": 0, "vol": "—", "src": "Q1 제어", "term": "", "note": "페이드 없이 정박에 딱 정지", "target": "Q1"},
- {"q": "Q4", "act": "프롤로그", "trig": "“알레그로가 먼저 불러볼게!”", "what": "hook 반주 1회 (모티프 율동)", "kind": "라이브", "len": "~30초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "모티프 율동과 함께"},
- {"q": "Q4A", "act": "프롤로그", "trig": "“모두 함께 따라 불러볼까? 준비, 시작!”", "what": "hook 반주 2회 (관객 따라부르기)", "kind": "라이브", "len": "~40초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "관객 콜앤리스폰스 · 길이 가변"},
+ {"q": "Q4", "act": "프롤로그", "trig": "“알레그로가 먼저 불러볼게!”", "what": "hook 반주 1회 (알레그로 시범)", "kind": "라이브", "len": "~30초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "모티프 율동과 함께"},
+ {"q": "Q4A", "act": "프롤로그", "trig": "“친구들이 불러볼까? 준비, 시작!”", "what": "hook 반주 2회 (모티프 파트)", "kind": "라이브", "len": "~30초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "모티프 율동과 함께"},
+ {"q": "Q4B", "act": "프롤로그", "trig": "“모두 함께 따라 불러볼까? 준비, 시작!”", "what": "hook 반주 3회 (관객 따라부르기)", "kind": "라이브", "len": "~40초", "loop": false, "fi": 0, "fo": 0, "vol": "MF", "src": "피아노 라이브 / 반주 음원", "term": "", "note": "관객 콜앤리스폰스 · 길이 가변"},
  {"q": "Q5", "act": "프롤로그", "trig": "암전", "what": "전환 화이트노이즈 스웰", "kind": "스팅어", "len": "3s", "loop": false, "fi": 0, "fo": 1, "vol": "MF", "src": "Pixabay", "term": "magical riser transition", "note": "암전과 동시"},
  {"q": "Q6", "act": "1막 · 음악이 사라진 마을", "trig": "스크린 회색 마을", "what": "주제곡 마이너·느리게 + 차가운 앰비언스", "kind": "베드", "len": "5분+", "loop": true, "fi": 3, "fo": 3, "vol": "PP", "src": "편곡자 + Pixabay", "term": "cold empty ambience drone", "note": "제이 독백 전체를 덮어야 함"},
  {"q": "Q7", "act": "1막 · 음악이 사라진 마을", "trig": "“난 이제 노래 같은 거 안 할래.”", "what": "신디 지속음 3번 → 오르골 선율", "kind": "베드", "len": "3분", "loop": true, "fi": 2, "fo": 2, "vol": "MP", "src": "신디 라이브 + Pixabay", "term": "music box magical sparkle", "note": "신디사이저 지속음 3번을 친 뒤 음원 재생"},
@@ -795,30 +796,38 @@ async function autoLoadFromServer(){
       return found;
     }
   }catch(e){}
-  const jobs = [];
-  state.forEach((s, i) => {
+
+  const exists = async url => {
+    try{ const r = await fetch(url, {method:'HEAD'}); return r.ok; }catch(e){ return false; }
+  };
+  const SUFFIX = ['', '_1', '_2', '_3', '_4', '_5'];
+
+  const jobs = state.map((s, i) => (async () => {
     if (!CAN_FILE(s.cue)) return;
-    jobs.push((async () => {
-      for (const suffix of ['', '_2', '_3', '_4']){
-        let hit = false;
-        for (const dir of ['audio/', '']){
-          for (const ext of EXTS){
-            const url = dir + s.cue.q + suffix + '.' + ext;
-            try{
-              const res = await fetch(url, {method:'HEAD'});
-              if (res.ok){ addURL(i, url, s.cue.q + suffix + '.' + ext); found++; hit = true; break; }
-            }catch(e){}
-          }
-          if (hit) break;
-        }
-        if (!hit && suffix) break;
+    let ctx = null;                                   // 처음 찾은 폴더·확장자를 기억
+    for (const sfx of SUFFIX){
+      const base = s.cue.q + sfx;
+      if (ctx){
+        const url = ctx.dir + base + ctx.ext;
+        if (await exists(url)){ addURL(i, url, base + ctx.ext); found++; }
+        continue;
       }
-    })());
-  });
+      let hit = false;
+      for (const dir of ['', 'audio/']){
+        for (const ext of EXTS){
+          const url = dir + base + '.' + ext;
+          if (await exists(url)){
+            addURL(i, url, base + '.' + ext); found++;
+            ctx = {dir, ext:'.' + ext}; hit = true; break;
+          }
+        }
+        if (hit) break;
+      }
+    }
+  })());
   await Promise.all(jobs);
   return found;
 }
-
 
 /* ── 설정 파일 (mix.json) ──────────────────────────────── */
 function buildMix(){
@@ -1006,7 +1015,8 @@ async function boot(){
     const b = document.getElementById('badge');
     b.hidden = false; b.className = 'badge net';
     b.textContent = '링크 음원 ' + Math.max(n, mixed) + '트랙' + (mixed ? ' · 공유 설정 적용' : '') + ' 자동 연결';
-    hint.innerHTML = HINT_BASE;
+    const miss = state.filter(s => REQ_FILE(s.cue) && !s.layers.length).map(s => s.cue.q);
+    hint.innerHTML = (miss.length ? '<b>음원이 아직 없는 큐:</b> ' + miss.join(', ') + '<br>' : '') + HINT_BASE;
   } else if (/^https?:$/.test(location.protocol)){
     hint.innerHTML = '이 주소 옆에 음원을 <span class="mono">Q13.mp3</span>로 올려두면 열자마자 붙습니다. ' +
       '같은 큐에 두 개를 겹치려면 <span class="mono">Q13.mp3</span>와 <span class="mono">Q13_2.mp3</span>로 올리세요. ' + HINT_BASE;
