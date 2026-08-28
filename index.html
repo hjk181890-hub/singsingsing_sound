@@ -542,9 +542,10 @@ function bulkAssign(fileList){
   if (!files.length){ alert('오디오 파일을 찾지 못했습니다.'); return; }
   let n = 0;
   files.forEach(f => {
-    const m = f.name.match(/(^|[^0-9a-z])q0*(\d{1,2})(?![0-9])/i);
+    const m = f.name.match(/(^|[^0-9a-z])q0*(\d{1,2})([a-z])?(?![0-9])/i);
     if (!m) return;
-    const i = state.findIndex(s => s.cue.q === 'Q' + Number(m[2]));
+    const id = 'Q' + Number(m[2]) + (m[3] ? m[3].toUpperCase() : '');
+    const i = state.findIndex(s => s.cue.q === id);
     if (i >= 0 && CAN_FILE(state[i].cue)){ addFile(i, f); n++; }
   });
   render();
